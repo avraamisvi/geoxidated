@@ -1,5 +1,6 @@
 use std::sync::Mutex;
 
+use config::read_config;
 use controllers::features_controller::execute_query;
 use model::geo_entity::GeoEntityTrait;
 use futures::executor;
@@ -9,19 +10,20 @@ use futures::executor;
 use repository::features_repository::FeatureRepository;
 use rocket::State;
 use services::feature::FeatureService;
-use sqlx::postgres::PgPoolOptions;
-
-use std::env;
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Error, PgPool};
 
 mod model;
 mod services;
 mod controllers;
 mod repository;
+mod config;
+mod parser;
 
 #[post("/execute", data = "<query>", format = "json")]
-fn execute(query: String, feature_service: &State<Mutex<FeatureService>>) -> String {
+fn execute(query: String, pg_pool: &State<PgPool>) -> String {
 
-    let result = execute_query(query, feature_service);
+    let mut feature_service = create_features_service(pg_pool);
+    let result = execute_query(&query, &mut feature_service);
     
     match result {
         Some(feature) => feature.to_geo_json(),
@@ -29,31 +31,27 @@ fn execute(query: String, feature_service: &State<Mutex<FeatureService>>) -> Str
     }
 }
 
-async fn create_features_service() -> Option<FeatureService> {
+fn create_features_service(pool_state: &State<PgPool>) -> FeatureService {
+    let pool = pool_state.inner().clone();
+    FeatureService::new(FeatureRepository::new(pool))
+}
 
-    let password = env::var("DB_PASSWORD").unwrap();
-    let user = env::var("DB_USER").unwrap();
+async fn create_pool() -> Result<Pool<Postgres>, Error> {
+    let configuration = read_config().unwrap();
 
-    let db_url = format!("postgres://{}:{}@localhost:5432/geo", user, password);
-
-    let pool_res = PgPoolOptions::new()
+    PgPoolOptions::new()
     .max_connections(5)
-    .connect(&db_url).await;
-
-    match pool_res {
-        Ok(pool) => Some(FeatureService::new(FeatureRepository::new(pool))),
-        Err(_) => None,
-    }
+    .connect(&configuration.get_database_url()).await
 }
 
 #[launch]
 fn rocket() -> _ {
-    
-    let feature_service: Option<FeatureService> = executor::block_on(async {
-        create_features_service().await
-    });
+
+    let pool: Pool<Postgres> = executor::block_on(async {
+        create_pool().await
+    }).unwrap();
 
     rocket::build()
-    .manage(Mutex::new(feature_service.unwrap()))
+    .manage(pool)
     .mount("/", routes![execute])
 }

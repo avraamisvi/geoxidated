@@ -852,11 +852,13 @@ dependencies = [
  "futures",
  "postgres",
  "rocket",
+ "serde",
  "serde_json",
  "sqlx",
  "strum",
  "strum_macros",
  "tokio",
+ "toml",
 ]
 
 [[package]]

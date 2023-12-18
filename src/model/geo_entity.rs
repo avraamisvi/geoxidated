@@ -10,13 +10,14 @@ pub trait GeoEntityTrait {//TOOD use super trait here?
 
 #[derive(new)]
 pub struct Feature {
-    id: i64,
-    geometry: Geometry,
-    properties: ObjectValue
+    pub id: i64,
+    pub geometry: Geometry,
+    pub properties: ObjectValue
 }
 
 pub struct FeatureCollection {
     id: i64,
+    label: String,
     features: Vec<Feature>
 }
 
@@ -43,22 +44,11 @@ impl GeoEntityTrait for FeatureCollection {
         format!(r#"{{
             "type": "FeatureCollection",
             "id": {},
+            "label": {},
             "features": {}
-        }}"#, self.id, parse_features(&self.features))
+        }}"#, self.id, self.label, parse_features(&self.features))
     }
 }
-
-// fn parse_properties(properties: &Vec<Property>) -> String {
-//     let mut separator = "";
-
-//     let properties: String = properties.iter().map(|property|{
-//         let formated = format!("{}{}", separator, property.to_geo_json());
-//         separator = ",";//ugh
-//         formated
-//     }).collect();
-
-//     format!("{{ {} }}", properties)
-// }
 
 fn parse_features(features: &Vec<Feature>) -> String {
     let mut separator = "";
