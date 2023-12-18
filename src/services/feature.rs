@@ -1,6 +1,6 @@
 use derive_new::new;
 
-use crate::{model::{geo_entity::{Feature, GeoEntity}, geometry::{Geometry, Point}, property::Property, value::{Value, NumberValue}}, repository::features_repository::FeatureRepository};
+use crate::{repository::features_repository::FeatureRepository, model::geo_entity::GeoEntity};
 
 #[derive(new)]
 pub struct FeatureService {

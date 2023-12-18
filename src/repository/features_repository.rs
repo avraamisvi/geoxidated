@@ -1,10 +1,10 @@
 use std::{error::Error, fmt::Display};
-use sqlx::{postgres::{PgPoolOptions, PgRow}, Row};
+use sqlx::{postgres::PgRow, Row};
 
 use derive_new::new;
 use serde_json::{Value, Map};
 
-use crate::model::{geo_entity::{GeoEntity, Feature}, property::{self, Property}, geometry::{Geometry, Point}, value::{NullValue, BooleanValue, NumberValue, StringValue, ArrayValue, ObjectValue, ObjectProperty}};
+use crate::model::{geo_entity::{GeoEntity, Feature}, geometry::{Geometry, Point}, value::{NullValue, BooleanValue, NumberValue, StringValue, ArrayValue, ObjectValue, ObjectProperty}};
 use crate::model::value::Value as ModelValue;
 
 #[derive(Debug)]
@@ -59,7 +59,7 @@ fn parse_feature(row: PgRow) -> Result<Feature, ParseError> {
 }
 
 fn parse_geometry(geom: Value) -> Geometry {
-    if(geom["type"].as_str().unwrap().to_lowercase() == "point") {
+    if geom["type"].as_str().unwrap().to_lowercase() == "point" {
         let points = geom["coordinates"].as_array().unwrap();
         Geometry::from(Point::new(points[0].as_f64().unwrap(), points[1].as_f64().unwrap()))
     } else {
@@ -97,7 +97,7 @@ fn parse_model_value(value: &Value) -> ModelValue {
         Value::Bool(value) => ModelValue::from(BooleanValue::new(*value)),
         Value::Number(value) => {
             
-            if(value.is_f64()) {
+            if value.is_f64() {
                 ModelValue::from(NumberValue::from(value.as_f64().unwrap()))
             } else {
                 ModelValue::from(NumberValue::from(value.as_i64().unwrap()))

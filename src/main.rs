@@ -1,13 +1,17 @@
+use std::sync::Mutex;
+
 use controllers::features_controller::execute_query;
-use model::geo_entity::{GeoEntity, GeoEntityTrait};
+use model::geo_entity::GeoEntityTrait;
 use futures::executor;
 
 #[macro_use] extern crate rocket;
 
-use repository::features_repository::{FeatureRepository};
-use rocket::futures::TryFutureExt;
+use repository::features_repository::FeatureRepository;
+use rocket::State;
 use services::feature::FeatureService;
 use sqlx::postgres::PgPoolOptions;
+
+use std::env;
 
 mod model;
 mod services;
@@ -15,15 +19,26 @@ mod controllers;
 mod repository;
 
 #[post("/execute", data = "<query>", format = "json")]
-fn execute(query: String) -> String {
-    let result = execute_query(query);
-    result.to_geo_json()
+fn execute(query: String, feature_service: &State<Mutex<FeatureService>>) -> String {
+
+    let result = execute_query(query, feature_service);
+    
+    match result {
+        Some(feature) => feature.to_geo_json(),
+        None => "{}".to_string()
+    }
 }
 
 async fn create_features_service() -> Option<FeatureService> {
+
+    let password = env::var("DB_PASSWORD").unwrap();
+    let user = env::var("DB_USER").unwrap();
+
+    let db_url = format!("postgres://{}:{}@localhost:5432/geo", user, password);
+
     let pool_res = PgPoolOptions::new()
     .max_connections(5)
-    .connect("postgres://postgres:password@localhost/test").await;
+    .connect(&db_url).await;
 
     match pool_res {
         Ok(pool) => Some(FeatureService::new(FeatureRepository::new(pool))),
@@ -39,6 +54,6 @@ fn rocket() -> _ {
     });
 
     rocket::build()
-    .manage(feature_service)
+    .manage(Mutex::new(feature_service.unwrap()))
     .mount("/", routes![execute])
 }
