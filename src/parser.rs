@@ -3,8 +3,10 @@ use sqlx::{postgres::PgRow, Row};
 
 use serde_json::{Value, Map};
 
-use crate::model::{geo_entity::{GeoEntity, Feature}, geometry::{Geometry, Point, GeometryTrait}, value::{NullValue, BooleanValue, NumberValue, StringValue, ArrayValue, ObjectValue, ObjectProperty, ValueTrait}};
+use crate::model::{geo_entity::{GeoEntity, Feature, FeatureCollection}, geometry::{Geometry, Point, GeometryTrait}, value::{NullValue, BooleanValue, NumberValue, StringValue, ArrayValue, ObjectValue, ObjectProperty, ValueTrait}};
 use crate::model::value::Value as ModelValue;
+
+//this module can be divided in two, parse from db and parse from serde
 
 #[derive(Debug)]
 pub struct ParseError {
@@ -28,6 +30,21 @@ impl From<serde_json::Error> for ParseError {
 impl Into<ModelValue> for Value {
     fn into(self) -> ModelValue {
         parse_model_value(&self)
+    }
+}
+
+impl From<&Value> for Feature {
+    fn from(value: &Value) -> Self {
+
+        let id = &value["id"].as_i64().unwrap_or(0);
+        let geometry = parse_geometry(&value["geometry"]);
+        let properties = if let Value::Object(properties) = &value["properties"] {
+            Some(parse_properties_from_value(properties).unwrap())
+        } else {
+            None
+        };
+        
+        Feature::new(*id, geometry, properties.unwrap_or(ObjectValue::new(vec![])))
     }
 }
 
@@ -63,6 +80,14 @@ pub fn parse_model_value(value: &Value) -> ModelValue {
         },
         
     }
+}
+
+pub fn parse_feature_collection(row: PgRow) -> Result<FeatureCollection, ParseError> {
+
+    let id: i64 = row.try_get(0).unwrap_or(0);
+    let label: String = row.try_get(1).unwrap_or("".to_string());
+
+    Ok(FeatureCollection::new(id, label, vec![]))
 }
 
 pub fn parse_feature(row: PgRow) -> Result<Feature, ParseError> {
@@ -104,19 +129,4 @@ pub fn parse_properties_from_value(properties: &Map<String, Value>) -> Result<Ob
     }).collect();
 
     Ok(ObjectValue::new(parsed_properties))
-}
-
-impl From<&Value> for Feature {
-    fn from(value: &Value) -> Self {
-
-        let id = &value["id"].as_i64().unwrap_or(0);
-        let geometry = parse_geometry(&value["geometry"]);
-        let properties = if let Value::Object(properties) = &value["properties"] {
-            Some(parse_properties_from_value(properties).unwrap())
-        } else {
-            None
-        };
-        
-        Feature::new(*id, geometry, properties.unwrap_or(ObjectValue::new(vec![])))
-    }
 }

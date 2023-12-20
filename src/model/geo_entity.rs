@@ -15,11 +15,18 @@ pub struct Feature {
     pub properties: ObjectValue
 }
 
+#[derive(new)]
 pub struct FeatureCollection {
     id: i64,
     label: String,
     features: Vec<Feature>
 }
+
+// #[derive(new)]
+// pub struct Hexagon {
+//     pub id: u64,
+//     pub properties: ObjectValue
+// }//TODO
 
 #[enum_dispatch::enum_dispatch(GeoEntityTrait)]
 pub enum GeoEntity {
@@ -44,7 +51,7 @@ impl GeoEntityTrait for FeatureCollection {
         format!(r#"{{
             "type": "FeatureCollection",
             "id": {},
-            "label": {},
+            "label": "{}",
             "features": {}
         }}"#, self.id, self.label, parse_features(&self.features))
     }
@@ -59,7 +66,7 @@ fn parse_features(features: &Vec<Feature>) -> String {
         formated
     }).collect();
 
-    format!("{{ {} }}", features)
+    format!("[ {} ]", features)
 }
 
 pub struct EmptyResult;

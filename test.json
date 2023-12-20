@@ -1,4 +1,29 @@
+POST http://127.0.0.1:8000/execute
+Content-Type: application/json
+
 {
     "request": "get_feature_by_id",
-    "id": 134
+    "id": 3
 }
+
+### save
+
+POST http://127.0.0.1:8000/execute
+Content-Type: application/json
+
+{
+    "request": "save_feature",
+    "geometry":{"type":"Point","coordinates":[103.0, 0.5]},
+    "properties": {"prop1": "8"}
+}
+
+### save collection
+
+POST http://127.0.0.1:8000/execute
+Content-Type: application/json
+
+{
+    "request": "create_collection",
+    "label":"my features"
+}
+
