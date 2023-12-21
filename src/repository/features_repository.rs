@@ -1,12 +1,28 @@
-use std::collections;
+use std::{fmt::Display, error::Error};
 
 use derive_new::new;
-use crate::{model::{geo_entity::{GeoEntity, Feature, FeatureCollection}, geometry::GeometryTrait, value::ValueTrait}, parser::{ParseError, parse_feature, parse_feature_collection}};
+
+use crate::model::{feature::Feature, feature_collection::FeatureCollection};
 
 static GEOXIDATED_SCHEMA: &str = "geoxidated";
 static FEATURE_TABLE: &str = "feature";
 static COLLECTION_TABLE: &str = "features_collection";
 // static HEXAGON_TABLE: &str = "hexagon";
+
+#[derive(Debug)]
+pub struct FeatureRepositoryError {
+    pub message: String
+}
+
+impl Display for FeatureRepositoryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Error when parsing {}", self.message)
+    }
+}
+
+impl Error for FeatureRepositoryError {}
+
+
 
 #[derive(new)]
 pub struct FeatureRepository {
@@ -15,7 +31,7 @@ pub struct FeatureRepository {
 
 impl FeatureRepository {
    
-    pub async fn get_feature_by_id(&mut self, id: &i64) -> Option<GeoEntity> {
+    pub async fn get_feature_by_id(&mut self, id: &i64) -> Result<Feature, FeatureRepositoryError> {
         
         let db = &self.pool;
 
@@ -26,51 +42,47 @@ impl FeatureRepository {
         let result = sqlx::query(&query)
         .fetch_one(db).await;
 
-        let parsed_feature_result = match result {
-            Ok(row) => parse_feature(row),
+        match result {
+            Ok(row) => Ok(Feature::from(&row)),
             Err(err) => {
                 println!("DB Error {}", err.to_string());
-                Err(ParseError{message: err.to_string()})
-            }
-        };
-
-        match parsed_feature_result {
-            Ok(feature) => Some(GeoEntity::from(feature)),
-            Err(_) => None
-        }
-    }
-
-    pub async fn save_feature(&mut self, feature: &Feature) -> Option<GeoEntity> {
-        
-        let db = &self.pool;
-
-        let query = format!("INSERT INTO {GEOXIDATED_SCHEMA}.{FEATURE_TABLE}(properties, geometry)
-         VALUES('{}'::json, ST_GeomFromGeoJSON('{}')) RETURNING id, properties::text, ST_AsGeoJSON(geometry)",
-         feature.properties.to_geo_json(),
-         feature.geometry.to_geo_json());
-
-        println!("{}", query);
-
-        let result = sqlx::query(&query)
-        .fetch_one(db).await;
-
-        let parsed_feature_result = match result {
-            Ok(row) => parse_feature(row),
-            Err(err) => Err(ParseError{message: err.to_string()})
-        };
-
-        match parsed_feature_result {
-            Ok(feature) => Some(GeoEntity::from(feature)),
-            Err(err) => {
-                println!("{}", err);
-                None
+                Err(FeatureRepositoryError{message: err.to_string()})
             }
         }
     }
 
-     pub async fn create_feature_collection(&mut self, label: &String) -> Option<GeoEntity> {
+    // pub async fn save_feature(&mut self, feature: &Feature) -> Option<GeoEntity> {
+        
+    //     let db = &self.pool;
+
+    //     let query = format!("INSERT INTO {GEOXIDATED_SCHEMA}.{FEATURE_TABLE}(properties, geometry)
+    //      VALUES('{}'::json, ST_GeomFromGeoJSON('{}')) RETURNING id, properties::text, ST_AsGeoJSON(geometry)",
+    //      feature.properties.to_geo_json(),
+    //      feature.geometry.to_geo_json());
+
+    //     println!("{}", query);
+
+    //     let result = sqlx::query(&query)
+    //     .fetch_one(db).await;
+
+    //     let parsed_feature_result = match result {
+    //         Ok(row) => parse_feature(row),
+    //         Err(err) => Err(ParseError{message: err.to_string()})
+    //     };
+
+    //     match parsed_feature_result {
+    //         Ok(feature) => Some(GeoEntity::from(feature)),
+    //         Err(err) => {
+    //             println!("{}", err);
+    //             None
+    //         }
+    //     }
+    // }
+
+     pub async fn create_collection(&mut self, collection: &FeatureCollection) -> Result<FeatureCollection, FeatureRepositoryError> {
         
         let db = &self.pool;
+        let label = &collection.label;
 
         let query = format!("INSERT INTO {GEOXIDATED_SCHEMA}.{COLLECTION_TABLE}(label)
          VALUES('{label}') RETURNING id, label");
@@ -80,18 +92,41 @@ impl FeatureRepository {
         let result = sqlx::query(&query)
         .fetch_one(db).await;
 
-        let parsed_result = match result {
-            Ok(row) => parse_feature_collection(row),
-            Err(err) => Err(ParseError{message: err.to_string()})
-        };
-
-        match parsed_result {
-            Ok(collection) => Some(GeoEntity::from(collection)),
+        match result {
+            Ok(row) => Ok(FeatureCollection::from(&row)),
             Err(err) => {
-                println!("{}", err);
-                None
+                println!("DB Error {}", err.to_string());
+                Err(FeatureRepositoryError{message: err.to_string()})
             }
         }
+    }
+
+    pub async fn get_collections(&mut self, offset: i64, size: i64) -> Result<Vec<FeatureCollection>, FeatureRepositoryError> {
+        
+        let db = &self.pool;
+
+        //NOTE: using deferred join to improve pagination
+        let query = format!("SELECT id, label FROM {GEOXIDATED_SCHEMA}.{COLLECTION_TABLE} \
+            INNER JOIN ( SELECT id FROM {GEOXIDATED_SCHEMA}.{COLLECTION_TABLE} LIMIT {size} OFFSET {offset} \
+        ) AS tmp USING(id) ORDER BY id, label");
+
+        print!("{}", query);
+
+        let result = sqlx::query(&query)
+        .fetch_all(db).await;
+
+        match result {
+            Ok(rows) => {
+                let collections: Vec<FeatureCollection> = rows.iter().map(|row| {
+                    FeatureCollection::from(row)
+                }).collect();
+
+                Ok(collections)
+            },
+            Err(err) => Err(FeatureRepositoryError{message: err.to_string()})
+        } 
     }    
+
+    
 }
 

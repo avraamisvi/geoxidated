@@ -1,32 +1,49 @@
-use rocket::State;
+use rocket::{State};
 use sqlx::PgPool;
+use rocket::response::Responder;
 
-use crate::{controllers::features_controller::execute_query, model::geo_entity::GeoEntityTrait,
-     services::feature::FeatureService, repository::features_repository::FeatureRepository};
+use crate::{services::feature::FeatureService, repository::features_repository::FeatureRepository, model::{feature_collection::FeatureCollection, json::Json}};
 
-//the ideia is to have a filtering query language using json maybe?
-#[post("/execute", data = "<query>", format = "json")]
-pub fn execute(query: String, pg_pool: &State<PgPool>) -> String {
+#[derive(Responder)]
+pub enum CollectionResponse {
+    #[response(status = 200, content_type = "json")]
+    Ok(String),
+    #[response(status = 201, content_type = "json")]
+    Created(String),
+    #[response(status = 500, content_type = "json")]
+    SystemError(String)
+}
+
+#[post("/collections", data = "<body>", format = "json")]
+pub fn post_collections(body: String, pg_pool: &State<PgPool>) -> CollectionResponse {
 
     let mut feature_service = create_features_service(pg_pool);
-    let result = execute_query(&query, &mut feature_service);
+    
+    let feature_collection = FeatureCollection::from(Json::new(body));
+
+    let result = futures::executor::block_on(async {
+        feature_service.create_collection(&feature_collection).await
+    });
     
     match result {
-        Some(feature) => feature.to_geo_json(),
-        None => "{}".to_string()
+        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Err(err) => CollectionResponse::SystemError(err.message)
     }
 }
 
 #[get("/collections?<page>&<size>")]
-pub fn get_collections(pg_pool: &State<PgPool>, size: i64, page: i64) -> String {
-    "".to_string()
-    // let mut feature_service = create_features_service(pg_pool);
-    // let result = execute_query(&query, &mut feature_service);
+pub fn get_collections(pg_pool: &State<PgPool>, size: i64, page: i64) -> CollectionResponse {
+
+    let mut feature_service = create_features_service(pg_pool);
     
-    // match result {
-    //     Some(feature) => feature.to_geo_json(),
-    //     None => "{}".to_string()
-    // }
+    let result = futures::executor::block_on(async{
+        feature_service.get_collections(page, size).await
+    });
+    
+    match result {
+        Ok(collection) => CollectionResponse::Created(collection.to_json()),
+        Err(err) => CollectionResponse::SystemError(err.message)
+    }
 }
 
 #[get("/collections/<min_lng>/<min_lat>/<max_lng>/<max_lat>?<page>&<size>")]
