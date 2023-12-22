@@ -7,6 +7,7 @@ use crate::model::{feature::Feature, feature_collection::FeatureCollection};
 static GEOXIDATED_SCHEMA: &str = "geoxidated";
 static FEATURE_TABLE: &str = "feature";
 static COLLECTION_TABLE: &str = "features_collection";
+static FEATURES_IN_COLLECTION: &str = "features_in_collection";
 // static HEXAGON_TABLE: &str = "hexagon";
 
 #[derive(Debug)]
@@ -31,19 +32,30 @@ pub struct FeatureRepository {
 
 impl FeatureRepository {
    
-    pub async fn get_feature_by_id(&mut self, id: &i64) -> Result<Feature, FeatureRepositoryError> {
+    pub async fn get_features_in_collection(&mut self, id: i64, offset: i64, size: i64) -> Result<Vec<Feature>, FeatureRepositoryError> {
         
         let db = &self.pool;
 
-        let query = format!("SELECT id, properties::text, ST_AsGeoJSON(geometry) FROM {GEOXIDATED_SCHEMA}.{FEATURE_TABLE} WHERE id = {id}");
+        let query = format!("SELECT id, \
+                                     properties::text,\
+                                     ST_AsGeoJSON(geometry) \
+                                     FROM {GEOXIDATED_SCHEMA}.{FEATURE_TABLE} fa \
+                                     INNER JOIN {GEOXIDATED_SCHEMA}.{FEATURES_IN_COLLECTION} fi \
+                                     ON fi.feature_id = fa.id AND fi.collection_id = {id}");
 
         print!("{}", query);
 
         let result = sqlx::query(&query)
-        .fetch_one(db).await;
+        .fetch_all(db).await;
 
         match result {
-            Ok(row) => Ok(Feature::from(&row)),
+            Ok(rows) => {
+                let collections: Vec<Feature> = rows.iter().map(|row| {
+                    Feature::from(row)
+                }).collect();
+
+                Ok(collections)
+            },
             Err(err) => {
                 println!("DB Error {}", err.to_string());
                 Err(FeatureRepositoryError{message: err.to_string()})
@@ -123,6 +135,23 @@ impl FeatureRepository {
 
                 Ok(collections)
             },
+            Err(err) => Err(FeatureRepositoryError{message: err.to_string()})
+        } 
+    }
+
+    pub async fn get_collection_by_id(&mut self, id: i64) -> Result<FeatureCollection, FeatureRepositoryError> {
+        
+        let db = &self.pool;
+
+        let query = format!("SELECT id, label FROM {GEOXIDATED_SCHEMA}.{COLLECTION_TABLE} WHERE id = {id}");
+
+        print!("{}", query);
+
+        let result = sqlx::query(&query)
+        .fetch_one(db).await;
+
+        match result {
+            Ok(row) => { Ok(FeatureCollection::from(&row))},
             Err(err) => Err(FeatureRepositoryError{message: err.to_string()})
         } 
     }    

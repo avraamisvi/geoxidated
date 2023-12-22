@@ -2,8 +2,8 @@
 
 use config::read_config;
 use futures::executor;
-use routes::{post_collections, get_collections};
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Error, PgPool};
+use routes::{post_collections, get_collections, get_collections_features};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Error};
 
 mod data;
 mod model;
@@ -21,7 +21,9 @@ fn rocket() -> _ {
 
     rocket::build()
     .manage(pool)
-    .mount("/", routes![post_collections, get_collections])
+    .mount("/", routes![post_collections, 
+                        get_collections, 
+                        get_collections_features])
 }
 
 async fn create_pool() -> Result<Pool<Postgres>, Error> {

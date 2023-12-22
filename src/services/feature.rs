@@ -2,7 +2,7 @@ use std::{fmt::Display, error::Error};
 
 use derive_new::new;
 
-use crate::{repository::features_repository::FeatureRepository, model::feature_collection::{FeatureCollectionList, FeatureCollection}};
+use crate::{repository::features_repository::{FeatureRepository, FeatureRepositoryError}, model::{feature_collection::{FeatureCollectionList, FeatureCollection}, feature::{self, Feature}}};
 
 
 #[derive(new, Debug)]
@@ -23,8 +23,7 @@ pub struct FeatureService {
     repository: FeatureRepository
 }
 
-//TODO Service catch repository errors and translate to business errors 
-//There is more to be done on service side
+//TODO Service catch repository errors and translate to business errors
 impl FeatureService {
 
     pub async fn get_collections(&mut self, page: i64, size: i64) -> Result<FeatureCollectionList, FeatureServiceError> {
@@ -45,6 +44,16 @@ impl FeatureService {
             Err(err) => Err(FeatureServiceError::new(err.message))
         }
     } 
+
+    pub async fn get_features_in_collection(&mut self, id: i64, page: i64, size: i64) -> Result<FeatureCollection, FeatureServiceError> {
+        let features_result = self.repository.get_features_in_collection(id, offset(page, size), size).await;
+        let feature_collection_result = self.repository.get_collection_by_id(id).await;
+
+        match feature_collection_result {
+            Ok(mut collection) => wrap_into_collection(collection, features_result),
+            Err(err) => Err(FeatureServiceError::new(err.message))
+        }
+    } 
     
     // pub async fn get_single_feature(&mut self, id: &i64) -> Option<GeoEntity> {
     //     return self.repository.get_feature_by_id(id).await;
@@ -58,4 +67,15 @@ impl FeatureService {
 
 fn offset(page: i64, size: i64) -> i64 {
     page * size
+}
+
+fn wrap_into_collection(mut collection: FeatureCollection, 
+    features_result:  Result<Vec<Feature>, FeatureRepositoryError>) -> Result<FeatureCollection, FeatureServiceError> {
+    match features_result {
+        Ok(features) => {
+            collection.features = features;
+            Ok(collection)
+        }
+        Err(err) => Err(FeatureServiceError::new(err.message))
+    }
 }

@@ -31,9 +31,8 @@ impl Database {
 
 
 pub fn read_config() -> std::io::Result<Configuration> {
-    let content = std::fs::read_to_string("configuration.toml")?;
+    let content = std::fs::read_to_string("Config.toml")?;
     let configuration: Configuration = toml::from_str(&content).unwrap();
 
     Ok(configuration)
-    // todo!()
 }

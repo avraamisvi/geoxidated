@@ -65,8 +65,18 @@ pub fn get_collections_by_bbox(pg_pool: &State<PgPool>,
 }
 
 #[get("/collections/<id>/items?<page>&<size>")]
-pub fn get_collections_features(pg_pool: &State<PgPool>, id: i64, size: i64, page: i64) -> String {
-    "".to_string()
+pub fn get_collections_features(pg_pool: &State<PgPool>, id: i64, size: i64, page: i64) -> CollectionResponse {
+    
+    let mut feature_service = create_features_service(pg_pool);
+    
+    let result = futures::executor::block_on(async{
+        feature_service.get_features_in_collection(id, page, size).await
+    });
+
+    match result {
+        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Err(err) => CollectionResponse::SystemError(err.message)
+    }
     // let mut feature_service = create_features_service(pg_pool);
     // let result = execute_query(&query, &mut feature_service);
     
