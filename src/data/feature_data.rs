@@ -14,7 +14,7 @@ impl From<&PgRow> for Feature {
             }
         };
 
-        let properties_str: String = row.try_get(1).unwrap_or("".to_string());
+        let properties_str: String = row.try_get(1).unwrap_or("{}".to_string());
         let geometry_str: String = row.try_get(2).unwrap_or("".to_string());
 
         Feature::new(id, Geometry::from(Json::new(geometry_str)), ObjectValue::from(Json::new(properties_str)))

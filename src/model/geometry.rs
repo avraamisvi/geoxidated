@@ -35,11 +35,12 @@ impl GeometryTrait for Point {
 //I will use the simplest approach here, through match, since Geometry is very limited
 impl From<&Value> for Geometry {
     fn from(value: &Value) -> Self {
-        let r#type = value["type"].as_str().unwrap();
+        let r#type = value["type"].as_str().unwrap().to_lowercase();
 
-        match r#type {
-            "Point" => Geometry::Point(Point::from(value)),
-            _ => unimplemented!()
+        if r#type == "point" {
+            Geometry::Point(Point::from(value))
+        } else {
+            unimplemented!()
         }
     }
 }

@@ -4,12 +4,14 @@ use serde_json::{Result, Value};
 use super::id::Id;
 use super::json::Json;
 use super::feature::Feature;
+use super::value::{ObjectValue, ValueTrait};
 
 #[derive(new)]
 pub struct FeatureCollection {
     pub id: Id,
     pub label: String,
-    pub features: Vec<Feature>
+    pub features: Vec<Feature>,
+    pub properties: ObjectValue
 }
 
 impl FeatureCollection {
@@ -17,7 +19,8 @@ impl FeatureCollection {
         FeatureCollection {
             id: Id::None,
             label: "".to_string(),
-            features: vec![]            
+            features: vec![],
+            properties: ObjectValue::empty()      
         }
     }
 }
@@ -29,6 +32,11 @@ impl From<&serde_json::Value> for FeatureCollection {
         let label = value["label"].as_str().unwrap();
 
         let features = value["features"].as_array();
+        let properties = if let Value::Object(properties) = &value["properties"] {
+            Some(ObjectValue::from(properties))
+        } else {
+            None
+        };
 
         let features = match features {
             Some(values) => {
@@ -39,7 +47,8 @@ impl From<&serde_json::Value> for FeatureCollection {
             None => vec![],
         };
 
-        FeatureCollection::new(id, label.to_string(), features)
+        FeatureCollection::new(id, label.to_string(), features,
+         properties.unwrap_or(ObjectValue::empty()))
     }
 }
 
@@ -91,8 +100,9 @@ impl FeatureCollection {
         let mut output = format!(r#"{{
             "type": "FeatureCollection",
             "id": {},
-            "label": "{}"
-        "#, self.id, self.label);
+            "label": "{}",
+            "properties": {}
+        "#, self.id, self.label, &self.properties.to_geo_json());
 
         if !self.features.is_empty() {
             output.push_str(format!(r#","features": {}"#, parse_features(&self.features)).as_str());

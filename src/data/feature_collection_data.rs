@@ -1,6 +1,6 @@
 use sqlx::{postgres::PgRow, Row, Error};
 
-use crate::model::{id::Id, feature_collection::FeatureCollection};
+use crate::model::{id::Id, feature_collection::FeatureCollection, value::ObjectValue, json::Json};
 
 //TODO separate Feature from FeatureEntity
 impl From<&PgRow> for FeatureCollection {
@@ -15,9 +15,8 @@ impl From<&PgRow> for FeatureCollection {
         };
 
         let label: String = row.try_get(1).unwrap_or("".to_string());
+        let properties_str: String = row.try_get(2).unwrap_or("{}".to_string());
 
-        // let properties_str: String = row.try_get(1).unwrap_or("".to_string());
-
-        FeatureCollection::new(id, label, vec![])
+        FeatureCollection::new(id, label, vec![], ObjectValue::from(Json::new(properties_str)))
     }
 }

@@ -52,6 +52,12 @@ pub struct ObjectValue {
     value: Vec<ObjectProperty>
 }
 
+impl ObjectValue {
+    pub fn empty() -> Self {
+        ObjectValue::new(vec![])
+    }
+}
+
 #[derive(new)]
 pub struct ObjectProperty {
     name: String,
@@ -98,7 +104,8 @@ impl ValueTrait for ArrayValue {
     fn to_geo_json(&self) -> String {
         let mut separator = "";
         let collected: String = self.value.iter().map(|value| {
-            let formated = format!("{}", value.to_geo_json());
+            let formated = format!("{}{}", separator, value.to_geo_json());
+            println!("{formated}");
             separator = ",";
             formated
         }).collect();
@@ -117,7 +124,7 @@ impl ValueTrait for ObjectValue {
     fn to_geo_json(&self) -> String {
         let mut separator = "";
         let collected: String = self.value.iter().map(|value| {
-            let formated = format!("{}", value.to_geo_json());
+            let formated = format!("{}{}", separator, value.to_geo_json());
             separator = ",";
             formated
         }).collect();

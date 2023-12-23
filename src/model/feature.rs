@@ -4,6 +4,7 @@ use crate::model::geometry::{Geometry, GeometryTrait};
 use crate::model::value::{ObjectValue, ValueTrait};
 
 use super::id::Id;
+use super::json::Json;
 
 #[derive(derive_new::new)]
 pub struct Feature {
@@ -35,5 +36,22 @@ impl From<&Value> for Feature {
         };
         
         Feature::new(id, geometry, properties.unwrap_or(ObjectValue::new(vec![])))
+    }
+}
+
+impl From<Json> for Feature {
+    fn from(value: Json) -> Self {
+        let value: serde_json::Result<Value> = serde_json::from_str(value.to_string_ref());
+
+        match value {
+            Ok(parsed) => Feature::from(&parsed),
+            Err(err) => panic!("Error could not parse json into Feature {}", err),
+        }
+    }
+}
+
+impl From<Json> for Vec<Feature> {
+    fn from(value: Json) -> Self {
+        todo!()
     }
 }
