@@ -49,9 +49,3 @@ impl From<Json> for Feature {
         }
     }
 }
-
-impl From<Json> for Vec<Feature> {
-    fn from(value: Json) -> Self {
-        todo!()
-    }
-}

@@ -136,15 +136,35 @@ pub fn get_features_by_bbox(pg_pool: &State<PgPool>,
 }
 
 #[get("/collections/<collection_id>/items/<feature_id>")]
-pub fn get_collections_feature(pg_pool: &State<PgPool>, collection_id: i64, feature_id: i64) -> String {
-    "".to_string()
-    // let mut feature_service = create_features_service(pg_pool);
-    // let result = execute_query(&query, &mut feature_service);
+pub fn get_collections_feature(pg_pool: &State<PgPool>, collection_id: i64, feature_id: i64) -> CollectionResponse {
+
+    let mut feature_service = create_features_service(pg_pool);
     
-    // match result {
-    //     Some(feature) => feature.to_geo_json(),
-    //     None => "{}".to_string()
-    // }
+    let result = futures::executor::block_on(async{
+        feature_service.get_features_in_collection_by_id(collection_id, feature_id).await
+    });
+
+    match result {
+        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Err(err) => CollectionResponse::SystemError(err.message)
+    }
+}
+
+#[post("/collections/filter/items", data = "<body>", format = "json")]
+pub fn post_feature(pg_pool: &State<PgPool>, body: String) -> CollectionResponse {
+
+    let mut feature_service = create_features_service(pg_pool);
+    
+    let feature = Feature::from(Json::new(body));
+
+    let result = futures::executor::block_on(async {
+        feature_service.create_feature(collection_id, &feature).await
+    });
+    
+    match result {
+        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Err(err) => CollectionResponse::SystemError(err.message)
+    }
 }
 
 fn create_features_service(pool_state: &State<PgPool>) -> FeatureService {

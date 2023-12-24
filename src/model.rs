@@ -5,3 +5,4 @@ pub mod json;
 pub mod feature;
 pub mod id;
 pub mod bbox;
+pub mod filter;

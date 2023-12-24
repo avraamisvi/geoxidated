@@ -2,7 +2,7 @@
 
 use config::read_config;
 use futures::executor;
-use routes::{post_collections, get_collections, 
+use routes::{post_collections, get_collections, get_collections_feature,
     get_collections_features, post_feature, put_collections,
     get_features_by_bbox, put_feature};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Error};

@@ -8,7 +8,6 @@ static GEOXIDATED_SCHEMA: &str = "geoxidated";
 static FEATURE_TABLE: &str = "feature";
 static COLLECTION_TABLE: &str = "features_collection";
 static FEATURES_IN_COLLECTION: &str = "features_in_collection";
-// static HEXAGON_TABLE: &str = "hexagon";
 
 #[derive(Debug)]
 pub struct FeatureRepositoryError {
@@ -90,6 +89,30 @@ impl FeatureRepository {
             }
         }
     }
+
+    pub async fn get_feature_by_id(&mut self, feature_id: i64) -> Result<Feature, FeatureRepositoryError> {
+        
+        let db = &self.pool;
+
+        let query = format!(r#"SELECT id, \
+                                     properties::text,\
+                                     ST_AsGeoJSON(geometry) \
+                                     FROM {GEOXIDATED_SCHEMA}.{FEATURE_TABLE} fa \
+                                     WHERE fa.id = {feature_id}"#);
+
+        let result = sqlx::query(&query)
+        .fetch_one(db).await;
+
+        match result {
+            Ok(row) => {
+                Ok(Feature::from(&row))
+            },
+            Err(err) => {
+                println!("DB Error {}", err.to_string());
+                Err(FeatureRepositoryError{message: err.to_string()})
+            }
+        }
+    }    
 
     pub async fn create_feature(&mut self, collection_id: i64, feature: &Feature) -> Result<Feature, FeatureRepositoryError> {
         

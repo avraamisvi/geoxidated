@@ -58,7 +58,7 @@ impl FeatureService {
         let feature_collection_result = self.repository.get_collection_by_id(id).await;
 
         match feature_collection_result {
-            Ok(mut collection) => wrap_into_collection(collection, features_result),
+            Ok(collection) => wrap_into_collection(collection, features_result),
             Err(err) => Err(FeatureServiceError::new(err.message))
         }
     } 
@@ -69,17 +69,28 @@ impl FeatureService {
         let feature_collection_result = self.repository.get_collection_by_id(id).await;
 
         match feature_collection_result {
-            Ok(mut collection) => wrap_into_collection(collection, features_result),
+            Ok(collection) => wrap_into_collection(collection, features_result),
             Err(err) => Err(FeatureServiceError::new(err.message))
         }
     } 
+
+    pub async fn get_features_in_collection_by_id(&mut self, collection_id: i64,
+        feature_id: i64) -> Result<FeatureCollection, FeatureServiceError> {
+       let features_result = self.repository.get_feature_by_id(feature_id).await;
+       let feature_collection_result = self.repository.get_collection_by_id(collection_id).await;
+
+       match feature_collection_result {
+           Ok(collection) => wrap_feature_into_collection(collection, features_result),
+           Err(err) => Err(FeatureServiceError::new(err.message))
+       }
+   } 
 
     pub async fn create_feature(&mut self, collection_id: i64, feature: &Feature) -> Result<FeatureCollection, FeatureServiceError> {
         let features_result = self.repository.create_feature(collection_id, feature).await;
         let feature_collection_result = self.repository.get_collection_by_id(collection_id).await;
 
         match feature_collection_result {
-            Ok(mut collection) => wrap_feature_into_collection(collection, features_result),
+            Ok(collection) => wrap_feature_into_collection(collection, features_result),
             Err(err) => Err(FeatureServiceError::new(err.message))
         }
     }     
@@ -89,7 +100,7 @@ impl FeatureService {
         let features_result = self.repository.update_feature(collection_id, feature).await;
 
         match feature_collection_result {
-            Ok(mut collection) => wrap_feature_into_collection(collection, features_result),
+            Ok(collection) => wrap_feature_into_collection(collection, features_result),
             Err(err) => Err(FeatureServiceError::new(err.message))
         }
     }  
