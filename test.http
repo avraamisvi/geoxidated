@@ -1,0 +1,93 @@
+GET http://127.0.0.1:8000/collections?page=0&size=10
+
+###
+
+POST http://127.0.0.1:8000/collections
+Content-Type: application/json
+
+{
+    "label": "OSM",
+    "properties": {
+        "Layer": "OSM"
+    }
+}
+
+###
+
+PUT http://127.0.0.1:8000/collections
+Content-Type: application/json
+
+{
+    "id": 6,
+    "label": "OSM",
+    "properties": {
+        "Layer": "OSM",
+        "nova": "2"
+    }
+}
+
+###
+
+GET http://127.0.0.1:8000/collections/2/items?page=0&size=10
+
+### creare feature
+
+POST http://127.0.0.1:8000/collections/6/item
+Content-Type: application/json
+
+{
+      "type": "Feature",
+      "geometry": {
+        "type": "point",
+        "coordinates": [
+          105,
+          0.8
+        ]
+      },
+      "properties": {
+        "some": "another"
+      }
+}
+
+### creare feature
+
+PUT http://127.0.0.1:8000/collections/2/item
+Content-Type: application/json
+
+{
+      "id": 39,
+      "type": "Feature",
+      "geometry": {
+        "type": "point",
+        "coordinates": [
+          10,
+          0.8
+        ]
+      },
+      "properties": {
+        "some": "ABACATE"
+      }
+}
+
+### save
+
+POST http://127.0.0.1:8000/execute
+Content-Type: application/json
+
+{
+    "request": "save_feature",
+    "geometry":{"type":"Point","coordinates":[103.0, 0.5]},
+    "properties": {"prop1": "8"}
+}
+
+### save collection
+
+POST http://127.0.0.1:8000/execute
+Content-Type: application/json
+
+{
+    "request": "create_collection",
+    "label":"my features"
+}
+
+

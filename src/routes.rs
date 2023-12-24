@@ -1,3 +1,31 @@
+/*
+    Copyright (c)  Abraão Isvi <avraamisvi@users.noreply.github.com>
+
+    Permission is hereby granted, free of charge, to any
+    person obtaining a copy of this software and associated
+    documentation files (the "Software"), to deal in the
+    Software without restriction, including without
+    limitation the rights to use, copy, modify, merge,
+    publish, distribute, sublicense, and/or sell copies of
+    the Software, and to permit persons to whom the Software
+    is furnished to do so, subject to the following
+    conditions:
+
+    The above copyright notice and this permission notice
+    shall be included in all copies or substantial portions
+    of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+    ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+    TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+    PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+    SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+    IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+ */
+
 use rocket::{State};
 use sqlx::PgPool;
 use rocket::response::Responder;
@@ -150,22 +178,22 @@ pub fn get_collections_feature(pg_pool: &State<PgPool>, collection_id: i64, feat
     }
 }
 
-#[post("/collections/filter/items", data = "<body>", format = "json")]
-pub fn post_feature(pg_pool: &State<PgPool>, body: String) -> CollectionResponse {
+// #[post("/collections/filter/items", data = "<body>", format = "json")]
+// pub fn post_feature(pg_pool: &State<PgPool>, body: String) -> CollectionResponse {
 
-    let mut feature_service = create_features_service(pg_pool);
+//     let mut feature_service = create_features_service(pg_pool);
     
-    let feature = Feature::from(Json::new(body));
+//     let feature = Feature::from(Json::new(body));
 
-    let result = futures::executor::block_on(async {
-        feature_service.create_feature(collection_id, &feature).await
-    });
+//     let result = futures::executor::block_on(async {
+//         feature_service.create_feature(collection_id, &feature).await
+//     });
     
-    match result {
-        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
-        Err(err) => CollectionResponse::SystemError(err.message)
-    }
-}
+//     match result {
+//         Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+//         Err(err) => CollectionResponse::SystemError(err.message)
+//     }
+// }
 
 fn create_features_service(pool_state: &State<PgPool>) -> FeatureService {
     let pool = pool_state.inner().clone();
