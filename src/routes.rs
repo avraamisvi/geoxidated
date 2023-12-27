@@ -30,7 +30,7 @@ use rocket::{State};
 use sqlx::PgPool;
 use rocket::response::Responder;
 
-use crate::{services::feature_service::FeatureService, repository::features_repository::FeatureRepository, model::{feature_collection::FeatureCollection, json::Json, feature::Feature, bbox::Bbox}};
+use crate::{services::feature_service::FeatureService, repository::features_repository::FeatureRepository, model::{feature_collection::FeatureCollection, json::Json, feature::Feature, bbox::Bbox, filter::Filter}};
 
 #[derive(Responder)]
 pub enum CollectionResponse {
@@ -120,7 +120,7 @@ pub fn get_collections(pg_pool: &State<PgPool>, size: i64, page: i64) -> Collect
     });
     
     match result {
-        Ok(collection) => CollectionResponse::Created(collection.to_json()),
+        Ok(collection) => CollectionResponse::Ok(collection.to_json()),
         Err(err) => CollectionResponse::SystemError(err.message)
     }
 }
@@ -135,7 +135,7 @@ pub fn get_collections_features(pg_pool: &State<PgPool>, id: i64, size: i64, pag
     });
 
     match result {
-        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Ok(collection) => CollectionResponse::Ok(collection.to_geo_json()),
         Err(err) => CollectionResponse::SystemError(err.message)
     }
 }
@@ -158,7 +158,7 @@ pub fn get_features_by_bbox(pg_pool: &State<PgPool>,
     });
 
     match result {
-        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Ok(collection) => CollectionResponse::Ok(collection.to_geo_json()),
         Err(err) => CollectionResponse::SystemError(err.message)
     }
 }
@@ -173,27 +173,27 @@ pub fn get_collections_feature(pg_pool: &State<PgPool>, collection_id: i64, feat
     });
 
     match result {
-        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Ok(collection) => CollectionResponse::Ok(collection.to_geo_json()),
         Err(err) => CollectionResponse::SystemError(err.message)
     }
 }
 
-// #[post("/collections/filter/items", data = "<body>", format = "json")]
-// pub fn post_feature(pg_pool: &State<PgPool>, body: String) -> CollectionResponse {
+#[post("/collections/<id>/filter/items", data = "<body>", format = "json")]
+pub fn filter_feature(pg_pool: &State<PgPool>, id: i64, body: String) -> CollectionResponse {
 
-//     let mut feature_service = create_features_service(pg_pool);
+    let mut feature_service = create_features_service(pg_pool);
     
-//     let feature = Feature::from(Json::new(body));
+    let filter = Filter::from(Json::new(body));
 
-//     let result = futures::executor::block_on(async {
-//         feature_service.create_feature(collection_id, &feature).await
-//     });
+    let result = futures::executor::block_on(async {
+        feature_service.filter_features_in_collection(id, &filter).await
+    });
     
-//     match result {
-//         Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
-//         Err(err) => CollectionResponse::SystemError(err.message)
-//     }
-// }
+    match result {
+        Ok(collection) => CollectionResponse::Created(collection.to_geo_json()),
+        Err(err) => CollectionResponse::SystemError(err.message)
+    }
+}
 
 fn create_features_service(pool_state: &State<PgPool>) -> FeatureService {
     let pool = pool_state.inner().clone();

@@ -30,7 +30,7 @@ use std::{fmt::Display, error::Error};
 
 use derive_new::new;
 
-use crate::model::{feature::Feature, feature_collection::FeatureCollection, value::ValueTrait, geometry::GeometryTrait, bbox::Bbox};
+use crate::model::{feature::Feature, feature_collection::FeatureCollection, value::ValueTrait, geometry::GeometryTrait, bbox::Bbox, filter::Filter};
 
 static GEOXIDATED_SCHEMA: &str = "geoxidated";
 static FEATURE_TABLE: &str = "feature";
@@ -118,14 +118,47 @@ impl FeatureRepository {
         }
     }
 
+    pub async fn get_features_in_collection_by_filter(&mut self, collection_id: i64, 
+        filter: &Filter, offset: i64, size: i64) -> Result<Vec<Feature>, FeatureRepositoryError> {
+       todo!() 
+        // let db = &self.pool;
+
+        // let bbox_geom = filter.;
+        // let query = format!(r#"SELECT id, \
+        //                              properties::text,\
+        //                              ST_AsGeoJSON(geometry) \
+        //                              FROM {GEOXIDATED_SCHEMA}.{FEATURE_TABLE} fa \
+        //                              INNER JOIN {GEOXIDATED_SCHEMA}.{FEATURES_IN_COLLECTION} fi \
+        //                              ON fi.feature_id = fa.id AND fi.collection_id = {collection_id}
+        //                              WHERE ST_Intersects(ST_GeomFromText('{bbox_geom}'), 4326, fa.geometry) 
+        //                              LIMIT {size} OFFSET {offset}"#);
+
+        // let result = sqlx::query(&query)
+        // .fetch_all(db).await;
+
+        // match result {
+        //     Ok(rows) => {
+        //         let collections: Vec<Feature> = rows.iter().map(|row| {
+        //             Feature::from(row)
+        //         }).collect();
+
+        //         Ok(collections)
+        //     },
+        //     Err(err) => {
+        //         println!("DB Error {}", err.to_string());
+        //         Err(FeatureRepositoryError{message: err.to_string()})
+        //     }
+        // }
+    }
+
     pub async fn get_feature_by_id(&mut self, feature_id: i64) -> Result<Feature, FeatureRepositoryError> {
         
         let db = &self.pool;
 
-        let query = format!(r#"SELECT id, \
-                                     properties::text,\
-                                     ST_AsGeoJSON(geometry) \
-                                     FROM {GEOXIDATED_SCHEMA}.{FEATURE_TABLE} fa \
+        let query = format!(r#"SELECT id,
+                                     properties::text,
+                                     ST_AsGeoJSON(geometry)
+                                     FROM {GEOXIDATED_SCHEMA}.{FEATURE_TABLE} fa
                                      WHERE fa.id = {feature_id}"#);
 
         let result = sqlx::query(&query)

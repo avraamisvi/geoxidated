@@ -56,7 +56,7 @@ pub struct Point {
 
 impl GeometryTrait for Point {
     fn to_geo_json(&self) -> String {
-        format!(r#"{{"type": "point", "coordinates": [{}, {}] }}"#, self.longitude, self.latitude)
+        format!(r#"{{"type": "Point", "coordinates": [{}, {}] }}"#, self.longitude, self.latitude)
     }
 } 
 

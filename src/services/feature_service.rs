@@ -30,7 +30,7 @@ use std::{fmt::Display, error::Error};
 
 use derive_new::new;
 
-use crate::{repository::features_repository::{FeatureRepository, FeatureRepositoryError}, model::{feature_collection::{FeatureCollectionList, FeatureCollection}, feature::{self, Feature}, bbox::Bbox}};
+use crate::{repository::features_repository::{FeatureRepository, FeatureRepositoryError}, model::{feature_collection::{FeatureCollectionList, FeatureCollection}, feature::{self, Feature}, bbox::Bbox, filter::Filter}};
 
 
 #[derive(new, Debug)]
@@ -132,6 +132,18 @@ impl FeatureService {
             Err(err) => Err(FeatureServiceError::new(err.message))
         }
     }  
+
+    pub async fn filter_features_in_collection(&mut self, collection_id: i64,
+        filter: &Filter) -> Result<FeatureCollection, FeatureServiceError> {
+            todo!()
+    //    let features_result = self.repository.get_feature_by_id(feature_id).await;
+    //    let feature_collection_result = self.repository.get_collection_by_id(collection_id).await;
+
+    //    match feature_collection_result {
+    //        Ok(collection) => wrap_feature_into_collection(collection, features_result),
+    //        Err(err) => Err(FeatureServiceError::new(err.message))
+    //    }
+   }     
 }
 
 

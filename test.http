@@ -6,9 +6,9 @@ POST http://127.0.0.1:8000/collections
 Content-Type: application/json
 
 {
-    "label": "OSM",
+    "label": "MY_LAYER_TEST",
     "properties": {
-        "Layer": "OSM"
+        "Layer": "MY_LAYER_TEST"
     }
 }
 
@@ -28,11 +28,15 @@ Content-Type: application/json
 
 ###
 
-GET http://127.0.0.1:8000/collections/2/items?page=0&size=10
+GET http://127.0.0.1:8000/collections/9/items?page=0&size=10
+
+### ONLY 1
+
+GET http://127.0.0.1:8000/collections/9/items/41
 
 ### creare feature
 
-POST http://127.0.0.1:8000/collections/6/item
+POST http://127.0.0.1:8000/collections/9/item
 Content-Type: application/json
 
 {
@@ -40,12 +44,12 @@ Content-Type: application/json
       "geometry": {
         "type": "point",
         "coordinates": [
-          105,
-          0.8
+          -38.520302,
+          -12.999122
         ]
       },
       "properties": {
-        "some": "another"
+        "some": "ABACATE"
       }
 }
 
@@ -60,8 +64,8 @@ Content-Type: application/json
       "geometry": {
         "type": "point",
         "coordinates": [
-          10,
-          0.8
+          -38.520302,
+          -12.999122
         ]
       },
       "properties": {
