@@ -30,8 +30,9 @@
 
 use config::read_config;
 use futures::executor;
+use rocket_cors::{AllowedOrigins, AllowedHeaders, Method};
 use routes::{post_collections, get_collections, get_collections_feature, 
-    get_collections_features, post_feature, put_collections,
+    get_collections_features, post_feature, put_collections, options_collections,
     get_features_by_bbox, put_feature};
 use sqlx::{postgres::PgPoolOptions, Pool, Postgres, Error};
 
@@ -49,14 +50,26 @@ mod routes;
 #[launch]
 fn rocket() -> _ {
 
+    // let allowed_origins = AllowedOrigins::All;
+
+    // // You can also deserialize this
+    // let cors = rocket_cors::CorsOptions {
+    //     allowed_origins,
+    //     allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(),
+    //     allowed_headers: AllowedHeaders::some(&["Authorization", "Accept"]),
+    //     allow_credentials: true,
+    //     ..Default::default()
+    // }
+    // .to_cors().unwrap();
+
     let pool: Pool<Postgres> = executor::block_on(async {
         create_pool().await
     }).unwrap();
 
     rocket::build()
     .manage(pool)
-    .attach(CORS)
-    .mount("/", routes![post_collections, 
+    .mount("/", routes![options_collections,
+                        post_collections, 
                         post_feature,
                         put_collections,
                         put_feature,
@@ -74,21 +87,21 @@ async fn create_pool() -> Result<Pool<Postgres>, Error> {
     .connect(&configuration.get_database_url()).await
 }
 
-pub struct CORS;
+// pub struct CORS;
 
-#[rocket::async_trait]
-impl Fairing for CORS {
-    fn info(&self) -> Info {
-        Info {
-            name: "Add CORS headers to responses",
-            kind: Kind::Response
-        }
-    }
+// #[rocket::async_trait]
+// impl Fairing for CORS {
+//     fn info(&self) -> Info {
+//         Info {
+//             name: "Add CORS headers to responses",
+//             kind: Kind::Response
+//         }
+//     }
 
-    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
-        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
-        response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
-        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
-        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
-    }
-}
+//     async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+//         response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+//         response.set_header(Header::new("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS"));
+//         response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+//         response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+//     }
+// }

@@ -26,20 +26,63 @@
     DEALINGS IN THE SOFTWARE.
  */
 
+use std::io::Cursor;
+
 use rocket::{State};
 use sqlx::PgPool;
-use rocket::response::Responder;
+use rocket::request::Request;
+use rocket::response::{self, Response, Responder};
 
 use crate::{services::feature_service::FeatureService, repository::features_repository::FeatureRepository, model::{feature_collection::FeatureCollection, json::Json, feature::Feature, bbox::Bbox, filter::Filter}};
 
-#[derive(Responder)]
+// #[derive(Responder)]
 pub enum CollectionResponse {
-    #[response(status = 200, content_type = "json")]
+    // #[response(status = 200, content_type = "json")]
     Ok(String),
-    #[response(status = 201, content_type = "json")]
+    // #[response(status = 201, content_type = "json")]
     Created(String),
-    #[response(status = 500, content_type = "json")]
+    // #[response(status = 500, content_type = "json")]
     SystemError(String)
+}
+
+struct CorsResponse;
+
+impl<'r> Responder<'r, 'static> for CorsResponse {
+    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
+        let mut resp = Response::new();
+
+        resp.set_raw_header("Access-Control-Allow-Origin", "*");
+        resp.set_raw_header("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS");
+        resp.set_raw_header("Access-Control-Allow-Headers", "*");
+        resp.set_raw_header("Access-Control-Allow-Credentials", "true");
+        
+        return Ok(resp);
+    }
+}
+
+impl<'r> Responder<'r, 'static> for CollectionResponse {
+    fn respond_to(self, request: &'r Request<'_>) -> response::Result<'static> {
+        let mut resp = Response::new();
+
+        match self {//TODO improve this code, too much repetition
+            CollectionResponse::Ok(data) => resp.set_sized_body(data.len(), Cursor::new(data)),
+            CollectionResponse::Created(data) => resp.set_sized_body(data.len(), Cursor::new(data)),
+            CollectionResponse::SystemError(data) => resp.set_sized_body(data.len(), Cursor::new(data)),
+        }
+
+        resp.set_raw_header("Access-Control-Allow-Origin", "*");
+        resp.set_raw_header("Access-Control-Allow-Methods", "POST, GET, PATCH, OPTIONS");
+        resp.set_raw_header("Access-Control-Allow-Headers", "*");
+        resp.set_raw_header("Access-Control-Allow-Credentials", "true");
+        
+        return Ok(resp);
+    }
+}
+
+//TODO find a way to intercept and enable CORS for all endpoints
+#[options("/collections/<collection_id>/item")]
+pub fn options_collections(collection_id: i64) -> CorsResponse {
+    return CorsResponse;
 }
 
 #[put("/collections", data = "<body>", format = "json")]

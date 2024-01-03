@@ -36,7 +36,7 @@ GET http://127.0.0.1:8000/collections/9/items/41
 
 ### creare feature
 
-POST http://127.0.0.1:8000/collections/9/item
+POST http://127.0.0.1:8000/collections/1/item
 Content-Type: application/json
 
 {
